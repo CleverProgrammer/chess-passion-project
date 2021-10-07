@@ -1,17 +1,69 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Chessboard from 'chessboardjsx'
 import * as Chess from 'chess.js'
 import useSound from 'use-sound'
 import chessMoveSfx from './sounds/chessMove.mp3'
 import chessCaptureSfx from './sounds/chessCapture.mp3'
+import './App.css'
+import {
+  db,
+  getGames,
+  getGame,
+  onSnapshot,
+  collection,
+  doc,
+  setDoc,
+} from './firebase'
 
 const STARTING_POSITION =
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 function App() {
   const [position, setPosition] = useState(STARTING_POSITION)
-  const [chessBoard] = useState(new Chess())
+  const [chessBoard, setChessBoard] = useState(new Chess())
   const [undoMovesHistory, setUndoMovesHistory] = useState([])
+  const [firebaseGameId, setFirebaseGameId] = useState('DEa2F0wP3xBZjtjHNit6')
+  const [firebaseGameData, setFirebaseGameData] = useState(null)
+  const [firebaseGamePosition, setFirebaseGamePosition] =
+    useState(STARTING_POSITION)
+  const [playerOneClock, setPlayerOneClock] = useState(300)
+  const notationEndRef = useRef(null)
+
+  // get all moves, play all moves.
+
+  const updateGameOnMove = async (sourceSquare, targetSquare, chessBoard) => {
+    const game = await getGame(db, firebaseGameId)
+    const newChessBoard = new Chess()
+    newChessBoard.load_pgn(game.pgn)
+    newChessBoard.move({ from: sourceSquare, to: targetSquare })
+    setChessBoard(newChessBoard)
+    console.log(newChessBoard.moves())
+    console.log(newChessBoard, '🧯')
+    const GAME_DOC_ID = 'DEa2F0wP3xBZjtjHNit6'
+    const gameRef = doc(db, 'games', GAME_DOC_ID)
+    setDoc(
+      gameRef,
+      {
+        position: newChessBoard.fen(),
+        moves: newChessBoard.history(),
+        pgn: newChessBoard.pgn(),
+      },
+      { merge: true }
+    )
+  }
+
+  useEffect(() => {
+    const gamesRef = collection(db, 'games')
+    console.log(doc(gamesRef, 'DEa2F0wP3xBZjtjHNit6'))
+    const GAME_DOC_ID = 'DEa2F0wP3xBZjtjHNit6'
+    const unsubscribe = onSnapshot(doc(db, 'games', GAME_DOC_ID), doc => {
+      console.log(doc.data())
+      setFirebaseGamePosition(doc.data().position)
+    })
+    return unsubscribe
+
+    getGames(db).then(games => console.log(games))
+  }, [position])
 
   const [chessMoveSound, { stop }] = useSound(chessMoveSfx, {
     sprite: {
@@ -25,12 +77,12 @@ function App() {
     },
   })
 
-  const evenMovesColumn = moves =>
+  const whiteMovesColumn = moves =>
     moves
       .filter((_, index) => index % 2 === 0)
       .map(move => <p style={{ color: '#BABABA', fontSize: 20 }}>{move}</p>)
 
-  const oddMovesColumn = moves =>
+  const blackMovesColumn = moves =>
     moves
       .filter((_, index) => index % 2 !== 0)
       .map(move => <p style={{ color: '#BABABA', fontSize: 20 }}>{move}</p>)
@@ -47,6 +99,42 @@ function App() {
       <p style={{ color: '#BABABA', fontSize: 20 }}>{turn}</p>
     ))
   }
+
+  let playerOneTime = 300
+  let clockOneId
+  const startPlayerOneClock = () => {
+    clockOneId = setInterval(() => {
+      playerOneTime--
+      console.log(secondsToHms(playerOneTime))
+      console.log(playerOneTime)
+    }, 1000)
+  }
+
+  function stopPlayerOneClock() {
+    clearInterval(clockOneId)
+    console.log('stopped')
+  }
+
+  useEffect(() => {
+    // startPlayerOneClock()
+    // stopPlayerOneClock()
+  }, [])
+
+  function secondsToHms(d) {
+    d = Number(d)
+    var h = Math.floor(d / 3600)
+    var m = Math.floor((d % 3600) / 60)
+    var s = Math.floor((d % 3600) % 60)
+
+    var hDisplay = h > 0 ? h + (h == 1 ? ' hour, ' : ' hours, ') : ''
+    var mDisplay = m > 0 ? m + (m == 1 ? ' minute, ' : ' minutes, ') : ''
+    var sDisplay = s > 0 ? s + (s == 1 ? ' second' : ' seconds') : ''
+    return hDisplay + mDisplay + sDisplay
+  }
+
+  useEffect(() => {
+    notationEndRef?.current?.scrollIntoView({ behavior: 'smooth' })
+  })
 
   return (
     <div style={styles.container}>
@@ -73,7 +161,7 @@ function App() {
         </h2>
       </div>
       <Chessboard
-        position={position}
+        position={firebaseGamePosition}
         transitionDuration={100}
         onDrop={({ sourceSquare, targetSquare }) => {
           const moveInfo = chessBoard.move({
@@ -81,13 +169,16 @@ function App() {
             to: targetSquare,
           })
 
+          updateGameOnMove(sourceSquare, targetSquare, chessBoard)
+
           if (moveInfo) {
             const flags = moveInfo.flags
             console.log(moveInfo)
             setPosition(chessBoard.fen())
+            console.log(chessBoard)
             numberMovesColumn(chessBoard.history())
             console.log(sourceSquare, targetSquare)
-            flags === 'c'
+            flags === 'c' || flags === 'e'
               ? chessCaptureSound({ id: 'capture' })
               : chessMoveSound({ id: 'move' })
           }
@@ -106,10 +197,13 @@ function App() {
           >
             {numberMovesColumn(chessBoard.history())}
           </div>
-          <div style={{ flex: 2, marginLeft: 10 }}>
-            {evenMovesColumn(chessBoard.history())}
+          <div className='notation' style={{ flex: 2, marginLeft: 10 }}>
+            {whiteMovesColumn(chessBoard.history())}
           </div>
-          <div style={{ flex: 2 }}>{oddMovesColumn(chessBoard.history())}</div>
+          <div className='notation' style={{ flex: 2 }}>
+            {blackMovesColumn(chessBoard.history())}
+          </div>
+          {/* <div ref={notationEndRef}></div> */}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -134,7 +228,7 @@ function App() {
               if (tempUndo.length === 0) return
               const { flags, from, to } = tempUndo.pop()
 
-              flags === 'c'
+              flags === 'c' || flags === 'e'
                 ? chessCaptureSound({ id: 'capture' })
                 : chessMoveSound({ id: 'move' })
 
@@ -176,7 +270,7 @@ const styles = {
     width: 400,
     height: '62vh',
     justifyContent: 'space-between',
-    // paddingLeft: 30,
+    overflowY: 'scroll',
   },
 
   movesText: {
