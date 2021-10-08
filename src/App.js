@@ -27,6 +27,7 @@ function App() {
   const [firebaseGamePosition, setFirebaseGamePosition] =
     useState(STARTING_POSITION)
   const notationEndRef = useRef(null)
+  const [sideToMove, setSideToMove] = useState('w')
   const [currentBoardWidth, setCurrentBoardWidth] = useState(560) // default width
 
   // get all moves, play all moves.
@@ -49,6 +50,8 @@ function App() {
 
   const updateGameOnMove = (sourceSquare, targetSquare, piece) => {
     // TODO - make the move first, THEN do async tasks with database
+    // who's turn is it to move?
+    // debugger
     const newChessBoard = new Chess()
     const _ =
       firebaseChessBoardPgn.length !== 0
@@ -65,6 +68,15 @@ function App() {
 
     // debugger
     if (moveInfo) {
+      setSideToMove(newChessBoard.fen().split(' ')[1])
+      const { sideMadeLastMove, sideToMove } =
+        newChessBoard.fen().split(' ')[1] === 'w'
+          ? { sideMadeLastMove: 'black', sideToMove: 'white' }
+          : { sideMadeLastMove: 'white', sideToMove: 'black' }
+      console.log(
+        `${sideMadeLastMove} just played ${moveInfo.san}... now it's ${sideToMove} to move...`
+      )
+
       const { flags, san } = moveInfo
 
       const _ = san.includes('#') ? checkMateSound({ id: 'checkMate' }) : null
@@ -157,8 +169,14 @@ function App() {
             style={{
               color: '#BABABA',
               padding: 10,
-              backgroundColor: '#262421',
+              // backgroundColor: '#262421',
               fontSize: 'max(calc(0.9vw + 0.9vh), 16px)',
+              backgroundColor:
+                name.includes('Adil') && sideToMove === 'w'
+                  ? '#384722'
+                  : name.includes('Qazi') && sideToMove === 'b'
+                  ? '#384722'
+                  : '#262421',
             }}
           >
             {name}
