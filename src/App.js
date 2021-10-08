@@ -27,8 +27,7 @@ function App() {
   const [firebaseGamePosition, setFirebaseGamePosition] =
     useState(STARTING_POSITION)
   const notationEndRef = useRef(null)
-  const [currentScreenWidth, setCurrentScreenWidth] = useState(0)
-  const [currentScreenHeight, setCurrentScreenHeight] = useState(0)
+  const [currentBoardWidth, setCurrentBoardWidth] = useState(560) // default width
 
   // get all moves, play all moves.
 
@@ -147,29 +146,24 @@ function App() {
   //   notationEndRef?.current?.scrollIntoView({ behavior: 'smooth' })
   // })
 
+  const players = [{ name: 'Rafeh Qazi' }, { name: 'Adil Dzelilovic' }]
+
   return (
     <div style={styles.container}>
       <div>
-        <h2
-          style={{
-            color: '#BABABA',
-            padding: 10,
-            backgroundColor: '#262421',
-            marginRight: 20,
-          }}
-        >
-          Rafeh Qazi
-        </h2>
-        <h2
-          style={{
-            color: '#BABABA',
-            padding: 10,
-            backgroundColor: '#262421',
-            marginRight: 20,
-          }}
-        >
-          Adil Dzelilovic
-        </h2>
+        {players.map(({ name }, i) => (
+          <h2
+            key={i}
+            style={{
+              color: '#BABABA',
+              padding: 10,
+              backgroundColor: '#262421',
+              fontSize: 'max(calc(0.9vw + 0.9vh), 16px)',
+            }}
+          >
+            {name}
+          </h2>
+        ))}
       </div>
       <div
         style={{
@@ -181,21 +175,21 @@ function App() {
         <Chessboard
           position={firebaseGamePosition}
           transitionDuration={100}
-          calcWidth={({ screenWidth, screenHeight }) => {
-            console.log(screenWidth, screenHeight)
-            setCurrentScreenWidth(screenWidth)
-            setCurrentScreenHeight(screenHeight)
+          calcWidth={({ screenWidth }) => {
+            if (screenWidth <= currentBoardWidth + 40) {
+              setCurrentBoardWidth(screenWidth - 40)
+            }
           }}
           onDrop={({ sourceSquare, targetSquare, piece }) => {
             updateGameOnMove(sourceSquare, targetSquare, piece)
           }}
+          width={currentBoardWidth}
+          boardStyle={{ margin: '0 2vw max(2vw, 20px)' }}
         />
 
         <button
           style={{
-            width: '30%',
             fontSize: 20,
-            margin: '0.5rem',
             padding: '7px 10px',
             borderRadius: '5px',
             backgroundColor: '#2F2E2C',
@@ -209,14 +203,13 @@ function App() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 70 }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={styles.movesContainer}>
           <div
             style={{
               flex: 1,
               backgroundColor: '#302E2C',
               textAlign: 'center',
-              height: '100',
             }}
           >
             {numberMovesColumn(firebaseChessBoardHistory)}
@@ -229,7 +222,13 @@ function App() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginBottom: 'min(1vw, 30px)',
+          }}
+        >
           <button
             style={styles.button}
             onClick={async () => {
@@ -289,6 +288,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     flexWrap: 'wrap',
+    padding: '10px 20px 20px',
   },
 
   button: {
@@ -300,12 +300,14 @@ const styles = {
 
   movesContainer: {
     display: 'flex',
-    marginLeft: 20,
     backgroundColor: '#262421',
     width: 400,
-    height: '62vh',
+    maxWidth: '90vw',
+    height: 'calc(20vw + 20vh)',
+    minHeight: 250,
     justifyContent: 'space-between',
     overflowY: 'scroll',
+    margin: 'max(0.8vw, 30px) 0 5px',
   },
 
   movesText: {
