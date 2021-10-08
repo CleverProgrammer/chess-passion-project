@@ -14,13 +14,18 @@ import {
   doc,
   setDoc,
 } from './firebase'
+import { getDoc } from '@firebase/firestore'
 
 const STARTING_POSITION =
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
+const GAME_DOC_ID = 'DEa2F0wP3xBZjtjHNit6'
+
 function App() {
   const [position, setPosition] = useState(STARTING_POSITION)
   const [chessBoard, setChessBoard] = useState(new Chess())
+  const [firebaseChessBoard, setFirebaseChessBoard] = useState(new Chess())
+  const [firebaseChessBoardHistory, setFirebaseChessBoardHistory] = useState([])
   const [undoMovesHistory, setUndoMovesHistory] = useState([])
   const [firebaseGameId, setFirebaseGameId] = useState('DEa2F0wP3xBZjtjHNit6')
   const [firebaseGameData, setFirebaseGameData] = useState(null)
@@ -31,25 +36,39 @@ function App() {
 
   // get all moves, play all moves.
 
-  const updateGameOnMove = async (sourceSquare, targetSquare, chessBoard) => {
+  const updateGameOnMove = async (sourceSquare, targetSquare, piece) => {
     const game = await getGame(db, firebaseGameId)
     const newChessBoard = new Chess()
     newChessBoard.load_pgn(game.pgn)
-    newChessBoard.move({ from: sourceSquare, to: targetSquare })
+
+    const moveInfo = newChessBoard.move({
+      from: sourceSquare,
+      to: targetSquare,
+      promotion: 'q',
+    })
+
     setChessBoard(newChessBoard)
-    console.log(newChessBoard.moves())
-    console.log(newChessBoard, '🧯')
-    const GAME_DOC_ID = 'DEa2F0wP3xBZjtjHNit6'
-    const gameRef = doc(db, 'games', GAME_DOC_ID)
-    setDoc(
-      gameRef,
-      {
-        position: newChessBoard.fen(),
-        moves: newChessBoard.history(),
-        pgn: newChessBoard.pgn(),
-      },
-      { merge: true }
-    )
+    setFirebaseChessBoard(newChessBoard)
+    setFirebaseChessBoardHistory(newChessBoard.history())
+
+    if (moveInfo) {
+      const flags = moveInfo.flags
+      flags === 'c' || flags === 'e'
+        ? chessCaptureSound({ id: 'capture' })
+        : chessMoveSound({ id: 'move' })
+
+      const gameRef = doc(db, 'games', GAME_DOC_ID)
+      setDoc(
+        gameRef,
+        {
+          position: newChessBoard.fen(),
+          moves: newChessBoard.history(),
+          pgn: newChessBoard.pgn(),
+        },
+        { merge: true }
+      )
+    }
+    return { newChessBoard }
   }
 
   useEffect(() => {
@@ -63,7 +82,7 @@ function App() {
     return unsubscribe
 
     getGames(db).then(games => console.log(games))
-  }, [position])
+  })
 
   const [chessMoveSound, { stop }] = useSound(chessMoveSfx, {
     sprite: {
@@ -163,25 +182,8 @@ function App() {
       <Chessboard
         position={firebaseGamePosition}
         transitionDuration={100}
-        onDrop={({ sourceSquare, targetSquare }) => {
-          const moveInfo = chessBoard.move({
-            from: sourceSquare,
-            to: targetSquare,
-          })
-
-          updateGameOnMove(sourceSquare, targetSquare, chessBoard)
-
-          if (moveInfo) {
-            const flags = moveInfo.flags
-            console.log(moveInfo)
-            setPosition(chessBoard.fen())
-            console.log(chessBoard)
-            numberMovesColumn(chessBoard.history())
-            console.log(sourceSquare, targetSquare)
-            flags === 'c' || flags === 'e'
-              ? chessCaptureSound({ id: 'capture' })
-              : chessMoveSound({ id: 'move' })
-          }
+        onDrop={({ sourceSquare, targetSquare, piece }) => {
+          updateGameOnMove(sourceSquare, targetSquare, piece)
         }}
       />
 
@@ -195,28 +197,38 @@ function App() {
               height: '100',
             }}
           >
-            {numberMovesColumn(chessBoard.history())}
+            {numberMovesColumn(firebaseChessBoardHistory)}
           </div>
           <div className='notation' style={{ flex: 2, marginLeft: 10 }}>
-            {whiteMovesColumn(chessBoard.history())}
+            {whiteMovesColumn(firebaseChessBoardHistory)}
           </div>
           <div className='notation' style={{ flex: 2 }}>
-            {blackMovesColumn(chessBoard.history())}
+            {blackMovesColumn(firebaseChessBoardHistory)}
           </div>
-          {/* <div ref={notationEndRef}></div> */}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             style={styles.button}
-            onClick={() => {
-              const lastMove = chessBoard.undo()
+            onClick={async () => {
+              const lastMove = firebaseChessBoard.undo()
+              console.log(lastMove)
               if (lastMove === null) return
+
+              const gameRef = doc(db, 'games', GAME_DOC_ID)
+              // debugger
+              const gameSnap = await getDoc(gameRef)
+              const undoMoves = gameSnap.data().undoMovesHistory
+              setDoc(
+                gameRef,
+                { undoMovesHistory: [...undoMoves, lastMove] },
+                { merge: true }
+              )
 
               setUndoMovesHistory([...undoMovesHistory, lastMove])
 
-              console.log(undoMovesHistory)
-              setPosition(chessBoard.fen())
+              // console.log(undoMovesHistory)
+              // setPosition(firebaseChessBoard.fen())
             }}
           >
             👈
@@ -234,14 +246,15 @@ function App() {
 
               setUndoMovesHistory(tempUndo)
 
-              chessBoard.move({ from, to })
-              setPosition(chessBoard.fen())
+              firebaseChessBoard.move({ from, to })
+              setPosition(firebaseChessBoard.fen())
               // undo gives you a from and a to
             }}
           >
             👉
           </button>
         </div>
+        {/* <div ref={notationEndRef}></div> */}
       </div>
     </div>
   )

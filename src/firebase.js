@@ -50,11 +50,6 @@ const getGame = async (db, docId) => {
   return gameSnap.data()
 }
 
-const updateGame = async db => {
-  collection(db, 'games').doc()
-  // add
-}
-
 export {
   analytics,
   getAuth,
