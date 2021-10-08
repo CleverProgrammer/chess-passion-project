@@ -27,6 +27,8 @@ function App() {
   const [firebaseGamePosition, setFirebaseGamePosition] =
     useState(STARTING_POSITION)
   const notationEndRef = useRef(null)
+  const [currentScreenWidth, setCurrentScreenWidth] = useState(0)
+  const [currentScreenHeight, setCurrentScreenHeight] = useState(0)
 
   // get all moves, play all moves.
 
@@ -114,7 +116,7 @@ function App() {
 
   const [newGameSound] = useSound(chessNewGameSfx, {
     sprite: {
-      newGame: [90, 1000],
+      newGame: [0, 1000],
     },
   })
 
@@ -179,10 +181,16 @@ function App() {
         <Chessboard
           position={firebaseGamePosition}
           transitionDuration={100}
+          calcWidth={({ screenWidth, screenHeight }) => {
+            console.log(screenWidth, screenHeight)
+            setCurrentScreenWidth(screenWidth)
+            setCurrentScreenHeight(screenHeight)
+          }}
           onDrop={({ sourceSquare, targetSquare, piece }) => {
             updateGameOnMove(sourceSquare, targetSquare, piece)
           }}
         />
+
         <button
           style={{
             width: '30%',
@@ -280,6 +288,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
   },
 
   button: {
