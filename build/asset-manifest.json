@@ -1,0 +1,29 @@
+{
+  "files": {
+    "main.css": "/static/css/main.a0ee7225.chunk.css",
+    "main.js": "/static/js/main.3d8ffbe5.chunk.js",
+    "main.js.map": "/static/js/main.3d8ffbe5.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.1291429c.js",
+    "runtime-main.js.map": "/static/js/runtime-main.1291429c.js.map",
+    "static/js/2.ba50a1c2.chunk.js": "/static/js/2.ba50a1c2.chunk.js",
+    "static/js/2.ba50a1c2.chunk.js.map": "/static/js/2.ba50a1c2.chunk.js.map",
+    "static/js/3.c4b32855.chunk.js": "/static/js/3.c4b32855.chunk.js",
+    "static/js/3.c4b32855.chunk.js.map": "/static/js/3.c4b32855.chunk.js.map",
+    "static/js/4.a0da0c00.chunk.js": "/static/js/4.a0da0c00.chunk.js",
+    "static/js/4.a0da0c00.chunk.js.map": "/static/js/4.a0da0c00.chunk.js.map",
+    "index.html": "/index.html",
+    "static/css/main.a0ee7225.chunk.css.map": "/static/css/main.a0ee7225.chunk.css.map",
+    "static/js/2.ba50a1c2.chunk.js.LICENSE.txt": "/static/js/2.ba50a1c2.chunk.js.LICENSE.txt",
+    "static/js/3.c4b32855.chunk.js.LICENSE.txt": "/static/js/3.c4b32855.chunk.js.LICENSE.txt",
+    "static/media/checkMate.e759e3ac.mp3": "/static/media/checkMate.e759e3ac.mp3",
+    "static/media/chessCapture.7d1fc293.mp3": "/static/media/chessCapture.7d1fc293.mp3",
+    "static/media/chessMove.25525989.mp3": "/static/media/chessMove.25525989.mp3",
+    "static/media/newGame.e759e3ac.mp3": "/static/media/newGame.e759e3ac.mp3"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.1291429c.js",
+    "static/js/2.ba50a1c2.chunk.js",
+    "static/css/main.a0ee7225.chunk.css",
+    "static/js/main.3d8ffbe5.chunk.js"
+  ]
+}
