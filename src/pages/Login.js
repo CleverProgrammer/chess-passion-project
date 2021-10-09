@@ -1,6 +1,6 @@
 import React from 'react'
 import '../styles/Login.css'
-import { signInWithGoogle } from '../firebase'
+import { signInWithGoogle, signInWithGithub } from '../firebase'
 
 export default function Login() {
   return (
@@ -13,6 +13,14 @@ export default function Login() {
             alt='google icon'
           />
           <span> Continue with Google</span>
+        </button>
+
+        <button className='login-provider-button' onClick={signInWithGithub}>
+          <img
+            src='https://cdn-icons-png.flaticon.com/512/733/733609.png'
+            alt='github icon'
+          />
+          <span> Continue with Github</span>
         </button>
       </div>
     </div>

@@ -13,6 +13,7 @@ import {
   getAuth,
   onAuthStateChanged,
   GoogleAuthProvider,
+  GithubAuthProvider,
   signInWithPopup,
   signOut,
 } from 'firebase/auth'
@@ -57,31 +58,48 @@ const getGame = async (db, docId) => {
   return gameSnap.data()
 }
 
+// Creating new Google Auth Provider
 const googleProvider = new GoogleAuthProvider()
-// googleProvider.addScope('https://www.googleapis.com/auth/contacts.readonly')
+googleProvider.addScope('https://www.googleapis.com/auth/contacts.readonly')
+
 
 export const signInWithGoogle = () => {
   signInWithPopup(auth, googleProvider)
-    .then(result => {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      const credential = GoogleAuthProvider.credentialFromResult(result)
-      const token = credential.accessToken
-      // The signed-in user info.
-      const user = result.user
-      // ...
-      console.log('signed in successfully! ', credential, token, user)
-    })
-    .catch(error => {
-      // Handle Errors here.
-      const errorCode = error.code
-      const errorMessage = error.message
-      // The email of the user's account used.
-      const email = error.email
-      // The AuthCredential type that was used.
-      const credential = GoogleAuthProvider.credentialFromError(error)
-      // ...
-      console.log('error ', error, errorCode, errorMessage, email, credential)
-    })
+  .then(result => {
+    // This gives you a Google Access Token. You can use it to access the Google API.
+    const credential = GoogleAuthProvider.credentialFromResult(result)
+    const token = credential.accessToken
+    // The signed-in user info.
+    const user = result.user
+    // ...
+    console.log('signed in successfully! ', credential, token, user)
+  })
+  .catch(error => {
+    // Handle Errors here.
+    const errorCode = error.code
+    const errorMessage = error.message
+    // The email of the user's account used.
+    const email = error.email
+    // The AuthCredential type that was used.
+    const credential = GoogleAuthProvider.credentialFromError(error)
+    // ...
+    console.log('error ', error, errorCode, errorMessage, email, credential)
+  })
+}
+
+// Creating Github Auth Provider
+const githubProvider = new GithubAuthProvider();
+
+export const signInWithGithub = () => {
+  signInWithPopup(auth, githubProvider).then(res => {
+    const credential = GithubAuthProvider.credentialFromResult(res)
+    const token = credential.accessToken;
+    const user = res.user;
+
+    console.log(user)
+  }).catch (err => {
+    console.log(err)
+  });
 }
 
 export {
