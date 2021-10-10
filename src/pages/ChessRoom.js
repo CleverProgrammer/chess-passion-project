@@ -7,9 +7,18 @@ import chessCaptureSfx from '../sounds/chessCapture.mp3'
 import chessNewGameSfx from '../sounds/newGame.mp3'
 import chessCheckmateSfx from '../sounds/checkMate.mp3'
 import '../App.css'
-import { db, onSnapshot, doc, setDoc, getDoc } from '../firebase'
+import {
+  db,
+  onSnapshot,
+  doc,
+  setDoc,
+  getDoc,
+  auth,
+  signOut,
+  collection,
+  getDocs,
+} from '../firebase'
 // import { useParams } from 'react-router-dom'
-import { auth, signOut } from '../firebase'
 
 const STARTING_POSITION =
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
@@ -31,6 +40,12 @@ function ChessRoom() {
   const [gamePlayers, setGamePlayers] = useState([
     { name: 'qazi@cleverprogrammer.com', turn: true, color: 'w' },
     { name: 'david@cleverprogrammer.com', turn: false, color: 'b' },
+  ])
+  const [firebaseRecentPlayers, setFirebaseRecentPlayers] = useState([
+    [
+      { name: 'qazi@cleverprogrammer.com', turn: true, color: 'w' },
+      { name: 'david@cleverprogrammer.com', turn: false, color: 'b' },
+    ],
   ])
   const [isMyTurn, setIsMyTurn] = useState(false)
   const [lastMove, setLastMove] = useState({})
@@ -183,6 +198,17 @@ function ChessRoom() {
           )
       console.log(isMyTurn)
     })
+
+    const getUsers = () => {
+      const usersRef = collection(db, 'users').orderBy('lastSeen', 'asc')
+      const usersSnap = getDocs(usersRef)
+      setFirebaseRecentPlayers(
+        usersSnap.docs.map(doc => doc.data()).slice(0, 2)
+      )
+      console.log(firebaseRecentPlayers)
+    }
+
+    getUsers()
     return unsubscribe
   }, [])
 
@@ -303,7 +329,7 @@ function ChessRoom() {
         <Chessboard
           position={firebaseGamePosition}
           transitionDuration={100}
-          draggable={true}
+          draggable={isMyTurn}
           calcWidth={({ screenWidth }) => {
             if (screenWidth <= currentBoardWidth + 40) {
               setCurrentBoardWidth(screenWidth - 40)

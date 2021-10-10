@@ -8,6 +8,7 @@ import {
   onSnapshot,
   setDoc,
   getDoc,
+  serverTimestamp,
 } from 'firebase/firestore'
 import {
   getAuth,
@@ -75,6 +76,7 @@ export const signInWithGoogle = () => {
           displayName: user.displayName,
           email: user.email,
           photoURL: user.photoURL,
+          lastSeen: serverTimestamp(),
         },
         { merge: true }
       )
@@ -109,4 +111,5 @@ export {
   getGames,
   signOut,
   getDoc,
+  serverTimestamp,
 }
