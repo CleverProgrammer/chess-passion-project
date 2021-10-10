@@ -68,6 +68,16 @@ export const signInWithGoogle = () => {
       const token = credential.accessToken
       // The signed-in user info.
       const user = result.user
+      const userRef = doc(db, 'users', user.email)
+      setDoc(
+        userRef,
+        {
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+        },
+        { merge: true }
+      )
       // ...
       console.log('signed in successfully! ', credential, token, user)
     })

@@ -19,27 +19,41 @@ const GAME_DOC_ID = 'DEa2F0wP3xBZjtjHNit6'
 function ChessRoom() {
   const [firebaseChessBoard, setFirebaseChessBoard] = useState(new Chess())
   const [firebaseChessBoardHistory, setFirebaseChessBoardHistory] = useState([])
-  const [firebaseChessBoardPgn, setFirebaseChessBoardPgn] = useState(
-    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-  )
+  const [firebaseChessBoardPgn, setFirebaseChessBoardPgn] = useState(null)
 
   const [undoMovesHistory, setUndoMovesHistory] = useState([])
   const [firebaseGameId, setFirebaseGameId] = useState(GAME_DOC_ID)
   const [firebaseGamePosition, setFirebaseGamePosition] =
     useState(STARTING_POSITION)
   const notationEndRef = useRef(null)
-  const [sideToMove, setSideToMove] = useState('w')
+  const [currentSideToMove, setCurrentSideToMove] = useState('w')
   const [currentBoardWidth, setCurrentBoardWidth] = useState(560) // default width
-
-  // get all moves, play all moves.
+  const [gamePlayers, setGamePlayers] = useState([
+    { name: 'qazi@cleverprogrammer.com', turn: true, color: 'w' },
+    { name: 'david@cleverprogrammer.com', turn: false, color: 'b' },
+  ])
+  const [isMyTurn, setIsMyTurn] = useState(false)
+  const [lastMove, setLastMove] = useState({})
+  const [currentCheckedKingPosition, setCurrentCheckedKingPosition] = useState(
+    []
+  )
 
   // Function to reset the game
   const resetGame = async firebaseGameId => {
-    // debugger
     const gameRef = doc(db, 'games', firebaseGameId)
+    const whitePlayer = gamePlayers.find(player => player.color === 'w')
+    const isUserWhitePlayer = whitePlayer.email === auth.currentUser.email
+    setIsMyTurn(isUserWhitePlayer)
+    setLastMove({})
     setDoc(
       gameRef,
-      { position: STARTING_POSITION, pgn: [], moves: [] },
+      {
+        position: STARTING_POSITION,
+        pgn: [],
+        moves: [],
+        turn: isUserWhitePlayer,
+        lastMove: [],
+      },
       { merge: true }
     )
     const gameSnap = await getDoc(gameRef)
@@ -58,6 +72,7 @@ function ChessRoom() {
       firebaseChessBoardPgn.length !== 0
         ? newChessBoard.load_pgn(firebaseChessBoardPgn)
         : null
+
     const moveInfo = newChessBoard.move({
       from: sourceSquare,
       to: targetSquare,
@@ -67,16 +82,48 @@ function ChessRoom() {
     setFirebaseChessBoard(newChessBoard)
     setFirebaseChessBoardHistory(newChessBoard.history())
 
-    // debugger
     if (moveInfo) {
-      setSideToMove(newChessBoard.fen().split(' ')[1])
+      setLastMove({ sourceSquare: sourceSquare, targetSquare: targetSquare })
+      setCurrentSideToMove(newChessBoard.fen().split(' ')[1])
       const { sideMadeLastMove, sideToMove } =
         newChessBoard.fen().split(' ')[1] === 'w'
-          ? { sideMadeLastMove: 'black', sideToMove: 'white' }
-          : { sideMadeLastMove: 'white', sideToMove: 'black' }
+          ? { sideMadeLastMove: 'b', sideToMove: 'w' }
+          : { sideMadeLastMove: 'w', sideToMove: 'b' }
       console.log(
         `${sideMadeLastMove} just played ${moveInfo.san}... now it's ${sideToMove} to move...`
       )
+      console.log(newChessBoard)
+      console.log(newChessBoard.in_check())
+      console.log(newChessBoard.in_checkmate())
+      // debugger
+      const __ = moveInfo.san.includes('+')
+        ? setCurrentCheckedKingPosition(
+            get_piece_positions(newChessBoard, {
+              type: 'k',
+              color: sideToMove,
+            })[0]
+          )
+        : 'no check'
+
+      console.log(__)
+
+      console.log(lastMove)
+
+      console.log('🔥🔥🔥')
+      console.log(
+        get_piece_positions(newChessBoard, { type: 'k', color: sideToMove })
+      )
+
+      // if side to move is black, turn their turn to true & white's to false
+      // if side to move is white, turn their turn to true & black's to false
+      // debugger
+      const index = gamePlayers.findIndex(player => player.color === sideToMove)
+      gamePlayers[index].turn = true
+      const index2 = gamePlayers.findIndex(
+        player => player.color !== sideToMove
+      )
+      gamePlayers[index2].turn = false
+      setGamePlayers(gamePlayers)
 
       const { flags, san } = moveInfo
 
@@ -93,6 +140,13 @@ function ChessRoom() {
           position: newChessBoard.fen(),
           moves: newChessBoard.history(),
           pgn: newChessBoard.pgn(),
+          players: gamePlayers,
+          lastMove: { sourceSquare, targetSquare },
+          isCheck: newChessBoard.in_check(),
+          currentKingPosition: get_piece_positions(newChessBoard, {
+            type: 'k',
+            color: sideToMove,
+          }),
         },
         { merge: true }
       )
@@ -102,8 +156,32 @@ function ChessRoom() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'games', GAME_DOC_ID), doc => {
+      const gameHistory = doc.data().moves
+      const players = doc.data().players
       setFirebaseGamePosition(doc.data().position)
       setFirebaseChessBoardPgn(doc.data().pgn)
+      setGamePlayers(doc.data().players)
+      setLastMove(doc.data().lastMove)
+      console.log(doc.data().currentKingPosition)
+      setCurrentCheckedKingPosition(
+        doc.data().isCheck ? doc.data().currentKingPosition : []
+      )
+
+      gameHistory.length === 0
+        ? setIsMyTurn(
+            !!players.find(
+              player =>
+                player.color === 'w' && player.email === auth.currentUser.email
+            )
+          )
+        : // A.) if FOUND: you get an object 👉 true
+          // B.) if NOT FOUND: you get undefined 👉 false
+          // setIsMyTurn(true)
+
+          setIsMyTurn(
+            players.find(player => player.email === auth.currentUser.email).turn
+          )
+      console.log(isMyTurn)
     })
     return unsubscribe
   }, [])
@@ -164,6 +242,22 @@ function ChessRoom() {
     { name: 'Adil Dzelilovic' },
   ]
 
+  const get_piece_positions = (game, piece) => {
+    return []
+      .concat(...game.board())
+      .map((p, index) => {
+        if (p !== null && p.type === piece.type && p.color === piece.color) {
+          return index
+        }
+      })
+      .filter(Number.isInteger)
+      .map(piece_index => {
+        const row = 'abcdefgh'[piece_index % 8]
+        const column = Math.ceil((64 - piece_index) / 8)
+        return row + column
+      })
+  }
+
   return (
     <div style={styles.container}>
       <div>
@@ -187,9 +281,9 @@ function ChessRoom() {
                 // backgroundColor: '#262421',
                 fontSize: 'max(calc(0.9vw + 0.9vh), 16px)',
                 backgroundColor:
-                  name.includes('Adil') && sideToMove === 'w'
+                  name.includes('Adil') && currentSideToMove === 'w'
                     ? '#384722'
-                    : name.includes('Qazi') && sideToMove === 'b'
+                    : name.includes('Qazi') && currentSideToMove === 'b'
                     ? '#384722'
                     : '#262421',
               }}
@@ -209,6 +303,7 @@ function ChessRoom() {
         <Chessboard
           position={firebaseGamePosition}
           transitionDuration={100}
+          draggable={true}
           calcWidth={({ screenWidth }) => {
             if (screenWidth <= currentBoardWidth + 40) {
               setCurrentBoardWidth(screenWidth - 40)
@@ -219,6 +314,17 @@ function ChessRoom() {
           }}
           width={currentBoardWidth}
           boardStyle={{ margin: '0 2vw max(2vw, 20px)' }}
+          squareStyles={
+            lastMove.sourceSquare
+              ? {
+                  [lastMove.sourceSquare]: { backgroundColor: '#CDD26A' },
+                  [lastMove.targetSquare]: { backgroundColor: '#CDD26A' },
+                  [currentCheckedKingPosition]: {
+                    backgroundColor: '#EB5749',
+                  },
+                }
+              : {}
+          }
         />
         <div>
           <button
@@ -290,7 +396,6 @@ function ChessRoom() {
               if (lastMove === null) return
 
               const gameRef = doc(db, 'games', GAME_DOC_ID)
-              // debugger
               const gameSnap = await getDoc(gameRef)
               const undoMoves = gameSnap.data().undoMovesHistory
               setDoc(
@@ -300,9 +405,6 @@ function ChessRoom() {
               )
 
               setUndoMovesHistory([...undoMovesHistory, lastMove])
-
-              // console.log(undoMovesHistory)
-              // setPosition(firebaseChessBoard.fen())
             }}
           >
             👈
@@ -321,7 +423,6 @@ function ChessRoom() {
               setUndoMovesHistory(tempUndo)
 
               firebaseChessBoard.move({ from, to })
-              // undo gives you a from and a to
             }}
           >
             👉
