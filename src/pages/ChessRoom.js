@@ -57,8 +57,6 @@ function ChessRoom() {
       { merge: true }
     )
     const gameSnap = await getDoc(gameRef)
-    console.log(gameSnap.data())
-    console.log(firebaseChessBoardHistory)
     setFirebaseChessBoardHistory(gameSnap.data().moves)
     newGameSound({ id: 'newGame' })
   }
@@ -89,12 +87,6 @@ function ChessRoom() {
         newChessBoard.fen().split(' ')[1] === 'w'
           ? { sideMadeLastMove: 'b', sideToMove: 'w' }
           : { sideMadeLastMove: 'w', sideToMove: 'b' }
-      console.log(
-        `${sideMadeLastMove} just played ${moveInfo.san}... now it's ${sideToMove} to move...`
-      )
-      console.log(newChessBoard)
-      console.log(newChessBoard.in_check())
-      console.log(newChessBoard.in_checkmate())
       // debugger
       const __ = moveInfo.san.includes('+')
         ? setCurrentCheckedKingPosition(
@@ -104,15 +96,6 @@ function ChessRoom() {
             })[0]
           )
         : 'no check'
-
-      console.log(__)
-
-      console.log(lastMove)
-
-      console.log('🔥🔥🔥')
-      console.log(
-        get_piece_positions(newChessBoard, { type: 'k', color: sideToMove })
-      )
 
       // if side to move is black, turn their turn to true & white's to false
       // if side to move is white, turn their turn to true & black's to false
@@ -162,7 +145,6 @@ function ChessRoom() {
       setFirebaseChessBoardPgn(doc.data().pgn)
       setGamePlayers(doc.data().players)
       setLastMove(doc.data().lastMove)
-      console.log(doc.data().currentKingPosition)
       setCurrentCheckedKingPosition(
         doc.data().isCheck ? doc.data().currentKingPosition : []
       )
@@ -181,7 +163,6 @@ function ChessRoom() {
           setIsMyTurn(
             players.find(player => player.email === auth.currentUser.email).turn
           )
-      console.log(isMyTurn)
     })
     return unsubscribe
   }, [])
@@ -353,8 +334,6 @@ function ChessRoom() {
             id='start'
             onClick={() =>
               signOut(auth)
-                .then(() => console.log('signed out successfully!'))
-                .catch(err => console.log(err))
             }
           >
             Sign Out
@@ -392,7 +371,6 @@ function ChessRoom() {
             style={styles.button}
             onClick={async () => {
               const lastMove = firebaseChessBoard.undo()
-              console.log(lastMove)
               if (lastMove === null) return
 
               const gameRef = doc(db, 'games', GAME_DOC_ID)

@@ -79,7 +79,7 @@ export const signInWithGoogle = () => {
         { merge: true }
       )
       // ...
-      console.log('signed in successfully! ', credential, token, user)
+
     })
     .catch(error => {
       // Handle Errors here.
@@ -90,7 +90,6 @@ export const signInWithGoogle = () => {
       // The AuthCredential type that was used.
       const credential = GoogleAuthProvider.credentialFromError(error)
       // ...
-      console.log('error ', error, errorCode, errorMessage, email, credential)
     })
 }
 

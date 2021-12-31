@@ -9,10 +9,8 @@ const App = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(null)
   onAuthStateChanged(auth, user => {
     if (user) {
-      console.log('user logged in')
       setIsUserLoggedIn(true)
     } else {
-      console.log('user logged out')
       setIsUserLoggedIn(false)
     }
   })
